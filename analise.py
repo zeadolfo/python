@@ -42,21 +42,46 @@ print(pd.crosstab(dados.StreamingTV, dados.Churn, margins = True, normalize = "i
 print(pd.crosstab(dados.StreamingMovies, dados.Churn, margins = True, normalize = "index"))
 print(pd.crosstab(dados.PaperlessBilling, dados.Churn, margins = True, normalize = "index"))
 print(pd.crosstab(dados.PaymentMethod, dados.Churn, margins = True, normalize = "index"))
-X = dados.iloc[:,1:19]
+
+
+
+X = dados.iloc[:,1:18]
 print(X)
 Y = dados.iloc[:,20]
 
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+
+
+
 label_encoder = LabelEncoder()
 categorical_cols = [col for col in X.select_dtypes(exclude=["number"]).columns]
 
 X_categorical = pd.DataFrame()
 for col in categorical_cols:
     X_categorical[col] = label_encoder.fit_transform(X[col])
-
+print(X_categorical)
+    
 Y_categorical = pd.DataFrame()
 Y_categorical = label_encoder.fit_transform(Y)
 
-modelo = lm.LogisticRegression().fit(X_categorical, Y_categorical)
-print(modelo.fit(X_categorical, Y_categorical))
+X_num = dados[["MonthlyCharges"]]
 
+
+X_categorical = pd.concat([X_categorical.reset_index(drop = True), X_num], axis = 1)
+
+X_train, X_test, Y_train, Y_test = train_test_split(X_categorical, Y_categorical, test_size=0.2, random_state=42)
+
+modelo = lm.Lasso(alpha = 0.1)
+modelo.fit(X_train, Y_train)
+ajuste = modelo.fit(X_train, Y_train)
+ola = ajuste.predict(X_test) >= 0.35
+print(pd.crosstab(ola, Y_test))
+
+from sklearn.svm import SVR
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler 
+modelo2 = make_pipeline(StandardScaler(), SVR(C=1.0, epsilon=0.2))
+ajuste2 = modelo2.fit(X_train, Y_train)
+ola2 = ajuste2.predict(X_test) >= 0.5
+print(pd.crosstab(ola2, Y_test))
