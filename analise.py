@@ -42,6 +42,7 @@ print(pd.crosstab(dados.StreamingTV, dados.Churn, margins = True, normalize = "i
 print(pd.crosstab(dados.StreamingMovies, dados.Churn, margins = True, normalize = "index"))
 print(pd.crosstab(dados.PaperlessBilling, dados.Churn, margins = True, normalize = "index"))
 print(pd.crosstab(dados.PaymentMethod, dados.Churn, margins = True, normalize = "index"))
+print(pd.crosstab(dados.Dependents, dados.Churn, margins = True, normalize = "index"))
 
 
 
@@ -65,23 +66,67 @@ print(X_categorical)
 Y_categorical = pd.DataFrame()
 Y_categorical = label_encoder.fit_transform(Y)
 
-X_num = dados[["MonthlyCharges"]]
+X_num = dados[["MonthlyCharges", "tenure"]]
 
 
 X_categorical = pd.concat([X_categorical.reset_index(drop = True), X_num], axis = 1)
 
 X_train, X_test, Y_train, Y_test = train_test_split(X_categorical, Y_categorical, test_size=0.2, random_state=42)
 
-modelo = lm.Lasso(alpha = 0.1)
+modelo = lm.Lasso(alpha = 0.2)
 modelo.fit(X_train, Y_train)
 ajuste = modelo.fit(X_train, Y_train)
-ola = ajuste.predict(X_test) >= 0.35
+ola = ajuste.predict(X_test) >= 0.5
 print(pd.crosstab(ola, Y_test))
+
+modelo = lm.RidgeClassifier(alpha = 0.4)
+modelo.fit(X_train, Y_train)
+ajuste = modelo.fit(X_train, Y_train)
+ola = ajuste.predict(X_test)
+print(pd.crosstab(ola, Y_test))
+
+
+modelo = lm.LogisticRegression()
+modelo.fit(X_train, Y_train)
+ajuste = modelo.fit(X_train, Y_train)
+ola = ajuste.predict(X_test)
+print(pd.crosstab(ola, Y_test))
+
+
 
 from sklearn.svm import SVR
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler 
-modelo2 = make_pipeline(StandardScaler(), SVR(C=1.0, epsilon=0.2))
+modelo2 = make_pipeline(StandardScaler(), SVR(C=1.0, epsilon=0.3))
 ajuste2 = modelo2.fit(X_train, Y_train)
 ola2 = ajuste2.predict(X_test) >= 0.5
 print(pd.crosstab(ola2, Y_test))
+
+
+from sklearn import tree
+
+clf = tree.DecisionTreeClassifier(max_depth = 6, splitter = "random")
+caminho = clf.cost_complexity_pruning_path(X_train, Y_train)
+ccp_alphas, impurities = caminho.ccp_alphas, caminho.impurities
+fig, ax = plt.subplots()
+ax.plot(ccp_alphas[:-1], impurities[:-1], marker='o', drawstyle="steps-post")
+ax.set_xlabel("effective alpha")
+ax.set_ylabel("total impurity of leaves")
+ax.set_title("Total Impurity vs effective alpha for training set")
+plt.show()
+
+
+ajuste3 = clf.fit(X_train, Y_train)
+ola3 = ajuste3.predict(X_test)
+print(pd.crosstab(ola3, Y_test))
+
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+
+clf = RandomForestClassifier(max_depth=4, random_state=3)
+ajuste4 = clf.fit(X_train, Y_train)
+ola4 = ajuste4.predict(X_test)
+print(pd.crosstab(ola4, Y_test))
+
+
